@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>member-beans | Server Status</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f0f0f;
+      color: #e8e8e8;
+      font-family: 'Press Start 2P', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .page-title {
+      font-size: 10px;
+      color: #888;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      letter-spacing: 2px;
+    }
+
+    .server-card {
+      background: #1a1a1a;
+      border: 2px solid #333;
+      padding: 1.5rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+    }
+
+    .grass-icon {
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      image-rendering: pixelated;
+    }
+
+    .server-title {
+      font-size: 9px;
+      color: #e8e8e8;
+      line-height: 2;
+    }
+
+    .server-ip {
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      color: #aaa;
+    }
+
+    .neoforge-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid #b36a00;
+      background: #1f1200;
+      color: #e8a020;
+      font-size: 7px;
+      font-family: 'Press Start 2P', monospace;
+      margin-top: 5px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 2px solid;
+      font-size: 9px;
+      font-family: 'Press Start 2P', monospace;
+      margin-bottom: 1.25rem;
+    }
+
+    .status-badge.online  { background: #0a1f0a; border-color: #2a6e2a; color: #5aff5a; }
+    .status-badge.offline { background: #1f0a0a; border-color: #6e2a2a; color: #ff5a5a; }
+    .status-badge.checking{ background: #1a1400; border-color: #6e5a00; color: #ffc040; }
+
+    .dot { width: 8px; height: 8px; flex-shrink: 0; }
+    .dot.online   { background: #5aff5a; animation: blink 1s steps(1) infinite; }
+    .dot.offline  { background: #ff5a5a; }
+    .dot.checking { background: #ffc040; animation: blink 0.5s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat-box {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 7px;
+      color: #777;
+      font-family: 'Press Start 2P', monospace;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .stat-value {
+      font-family: 'VT323', monospace;
+      font-size: 28px;
+      color: #e8e8e8;
+      line-height: 1;
+    }
+
+    .stat-value.green { color: #5aff5a; }
+
+    .info-box {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      padding: 10px 14px;
+      margin-bottom: 1.25rem;
+    }
+
+    .info-label {
+      font-size: 7px;
+      color: #777;
+      font-family: 'Press Start 2P', monospace;
+      margin-bottom: 6px;
+    }
+
+    .info-text {
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      color: #e8e8e8;
+      word-break: break-word;
+    }
+
+    .players-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .player-tag {
+      font-family: 'VT323', monospace;
+      font-size: 16px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 2px 8px;
+      color: #e8e8e8;
+    }
+
+    .note-text {
+      font-family: 'VT323', monospace;
+      font-size: 15px;
+      color: #555;
+      font-style: italic;
+      margin-top: 6px;
+    }
+
+    hr { border: none; border-top: 1px solid #222; margin: 1rem 0; }
+
+    .refresh-btn {
+      width: 100%;
+      padding: 10px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      background: #111;
+      color: #e8e8e8;
+      border: 2px solid #333;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.1s;
+    }
+
+    .refresh-btn:hover   { background: #1f1f1f; }
+    .refresh-btn:active  { transform: scale(0.98); }
+    .refresh-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+    .last-checked {
+      font-family: 'VT323', monospace;
+      font-size: 14px;
+      color: #444;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 7px;
+      color: #333;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <p class="page-title">// SERVER STATUS //</p>
+
+  <div class="server-card">
+
+    <div class="header-row">
+      <svg class="grass-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <rect width="16" height="16" fill="#8B5E3C"/>
+        <rect width="16" height="6" fill="#5a9e3a"/>
+        <rect x="0" y="4" width="2" height="2" fill="#4a8e2a"/>
+        <rect x="3" y="3" width="2" height="2" fill="#6aae4a"/>
+        <rect x="7" y="3" width="2" height="2" fill="#4a8e2a"/>
+        <rect x="12" y="4" width="2" height="2" fill="#6aae4a"/>
+      </svg>
+      <div>
+        <div class="server-title">member-beans server</div>
+        <div class="server-ip">member-beans.gl.joinmc.link</div>
+        <div class="neoforge-badge">
+          <svg width="10" height="10" viewBox="0 0 10 10"><polygon points="5,1 9,9 1,9" fill="currentColor"/></svg>
+          NEOFORGE MODDED
+        </div>
+      </div>
+    </div>
+
+    <div id="status-badge" class="status-badge checking">
+      <div id="dot" class="dot checking"></div>
+      <span id="status-text">CHECKING...</span>
+    </div>
+
+    <div id="stats-grid" class="stats-grid" style="display:none">
+      <div class="stat-box">
+        <span class="stat-label">players online</span>
+        <span id="stat-online" class="stat-value green">—</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">max players</span>
+        <span id="stat-max" class="stat-value">—</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">ping (ms)</span>
+        <span id="stat-ping" class="stat-value">—</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">mods loaded</span>
+        <span id="stat-mods" class="stat-value">—</span>
+      </div>
+    </div>
+
+    <div id="version-box" class="info-box" style="display:none">
+      <div class="info-label">VERSION</div>
+      <div id="version-text" class="info-text"></div>
+    </div>
+
+    <div id="motd-box" class="info-box" style="display:none">
+      <div class="info-label">MOTD</div>
+      <div id="motd-text" class="info-text"></div>
+    </div>
+
+    <div id="players-box" class="info-box" style="display:none">
+      <div class="info-label">ONLINE PLAYERS</div>
+      <div id="players-list" class="players-list"></div>
+      <div id="players-note" class="note-text" style="display:none"></div>
+    </div>
+
+    <hr>
+    <button class="refresh-btn" id="refresh-btn" onclick="checkStatus()">[ refresh status ]</button>
+    <div class="last-checked" id="last-checked"></div>
+  </div>
+
+  <p class="footer">auto-refreshes every 60 seconds</p>
+</div>
+
+<script>
+  const SERVER = 'member-beans.gl.joinmc.link';
+
+  function el(id) { return document.getElementById(id); }
+  function stripCodes(t) { return (t || '').replace(/§[0-9a-fk-or]/gi, '').replace(/\u00a7[0-9a-fk-or]/gi, '').trim(); }
+
+  async function checkStatus() {
+    el('status-badge').className = 'status-badge checking';
+    el('dot').className = 'dot checking';
+    el('status-text').textContent = 'CHECKING...';
+    ['stats-grid', 'version-box', 'motd-box', 'players-box'].forEach(i => el(i).style.display = 'none');
+    el('refresh-btn').disabled = true;
+    el('refresh-btn').textContent = '[ pinging... ]';
+
+    const t0 = Date.now();
+    try {
+      const res = await fetch(`https://api.mcsrvstat.us/3/${SERVER}`);
+      const ping = Date.now() - t0;
+      const d = await res.json();
+
+      if (d.online) {
+        el('status-badge').className = 'status-badge online';
+        el('dot').className = 'dot online';
+        el('status-text').textContent = 'ONLINE';
+
+        el('stat-online').textContent = d.players?.online ?? '?';
+        el('stat-max').textContent = d.players?.max ?? '?';
+        el('stat-ping').textContent = ping;
+        el('stat-mods').textContent = Array.isArray(d.mods) ? d.mods.length : '?';
+        el('stats-grid').style.display = 'grid';
+
+        if (d.version) {
+          el('version-text').textContent = d.version;
+          el('version-box').style.display = 'block';
+        }
+
+        const motdClean = stripCodes((d.motd?.clean || d.motd?.raw || []).join(' '));
+        if (motdClean) {
+          el('motd-text').textContent = motdClean;
+          el('motd-box').style.display = 'block';
+        }
+
+        el('players-box').style.display = 'block';
+        if (d.players?.list?.length) {
+          const list = el('players-list');
+          list.innerHTML = '';
+          d.players.list.forEach(p => {
+            const tag = document.createElement('span');
+            tag.className = 'player-tag';
+            tag.textContent = typeof p === 'object' ? p.name : p;
+            list.appendChild(tag);
+          });
+          el('players-note').style.display = 'none';
+        } else {
+          el('players-list').innerHTML = '';
+          el('players-note').style.display = 'block';
+          el('players-note').textContent = d.players?.online > 0 ? 'Player list not exposed by server' : 'No players online';
+        }
+
+      } else {
+        el('status-badge').className = 'status-badge offline';
+        el('dot').className = 'dot offline';
+        el('status-text').textContent = 'OFFLINE';
+      }
+
+      el('last-checked').textContent = 'last checked: ' + new Date().toLocaleTimeString();
+    } catch (e) {
+      el('status-badge').className = 'status-badge offline';
+      el('dot').className = 'dot offline';
+      el('status-text').textContent = 'ERROR';
+      el('last-checked').textContent = 'failed to reach status API';
+    }
+
+    el('refresh-btn').disabled = false;
+    el('refresh-btn').textContent = '[ refresh status ]';
+  }
+
+  checkStatus();
+  setInterval(checkStatus, 60000);
+</script>
+
+</body>
+</html>
