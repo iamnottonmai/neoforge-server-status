@@ -301,7 +301,7 @@
 
     const t0 = Date.now();
     try {
-      const res = await fetch(`https://api.mcsrvstat.us/3/${SERVER}`);
+      const res = await fetch(`https://api.mcstatus.io/v2/status/java/${SERVER}`);
       const ping = Date.now() - t0;
       const d = await res.json();
 
@@ -310,23 +310,32 @@
         el('dot').className = 'dot online';
         el('status-text').textContent = 'ONLINE';
 
+        // players
         el('stat-online').textContent = d.players?.online ?? '?';
         el('stat-max').textContent = d.players?.max ?? '?';
-        el('stat-ping').textContent = ping;
-        el('stat-mods').textContent = Array.isArray(d.mods) ? d.mods.length : '?';
+
+        // ping (API also gives one but fallback to measured)
+        el('stat-ping').textContent = d.latency ?? ping;
+
+        // mods (mcstatus usually doesn't expose this)
+        el('stat-mods').textContent = '?';
+
         el('stats-grid').style.display = 'grid';
 
-        if (d.version) {
-          el('version-text').textContent = d.version;
+        // version
+        if (d.version?.name_clean) {
+          el('version-text').textContent = d.version.name_clean;
           el('version-box').style.display = 'block';
         }
 
-        const motdClean = stripCodes((d.motd?.clean || d.motd?.raw || []).join(' '));
+        // MOTD
+        const motdClean = stripCodes(d.motd?.clean || d.motd?.raw || '');
         if (motdClean) {
           el('motd-text').textContent = motdClean;
           el('motd-box').style.display = 'block';
         }
 
+        // players list
         el('players-box').style.display = 'block';
         if (d.players?.list?.length) {
           const list = el('players-list');
@@ -334,14 +343,15 @@
           d.players.list.forEach(p => {
             const tag = document.createElement('span');
             tag.className = 'player-tag';
-            tag.textContent = typeof p === 'object' ? p.name : p;
+            tag.textContent = typeof p === 'object' ? p.name_clean : p;
             list.appendChild(tag);
           });
           el('players-note').style.display = 'none';
         } else {
           el('players-list').innerHTML = '';
           el('players-note').style.display = 'block';
-          el('players-note').textContent = d.players?.online > 0 ? 'Player list not exposed by server' : 'No players online';
+          el('players-note').textContent =
+            d.players?.online > 0 ? 'Player list not exposed by server' : 'No players online';
         }
 
       } else {
@@ -351,6 +361,7 @@
       }
 
       el('last-checked').textContent = 'last checked: ' + new Date().toLocaleTimeString();
+
     } catch (e) {
       el('status-badge').className = 'status-badge offline';
       el('dot').className = 'dot offline';
